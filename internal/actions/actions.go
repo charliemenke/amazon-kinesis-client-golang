@@ -13,8 +13,8 @@ type Action interface {
 }
 
 type rawAction struct {
-	ActionType	string `json:"action"`
-	Raw			[]byte	
+	ActionType string `json:"action"`
+	Raw        []byte
 }
 
 func (a *rawAction) UnmarshalJSON(data []byte) error {

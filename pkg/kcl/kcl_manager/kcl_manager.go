@@ -6,32 +6,37 @@ import (
 	"log/slog"
 
 	"github.com/charliemenke/amazon-kinesis-client-golang/internal/actions"
+	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
 )
 
-type KCLProcess struct {
+type KCLManager struct {
 	input           *bufio.Reader
 	output          io.Writer
 	errOutput       io.Writer
 	recordProcessor kcl.RecordProcessor
+	checkpointer    *checkpoint.Checkpointer
 	loggr           *slog.Logger
 }
 
-func NewKCLProcess(input io.Reader, output, errOutput io.Writer, rp kcl.RecordProcessor) *KCLProcess {
-	return &KCLProcess{
+func NewKCLManager(input io.Reader, output, errOutput io.Writer, rp kcl.RecordProcessor) *KCLManager {
+	return &KCLManager{
 		input:           bufio.NewReader(input),
 		output:          output,
 		errOutput:       output,
 		recordProcessor: rp,
+		checkpointer:    checkpoint.NewCheckpointer(bufio.NewReader(input), output),
+		loggr:           slog.Default(),
 	}
 }
 
-func (kcl *KCLProcess) readAction() (actions.Action, error) {
+func (kcl *KCLManager) readAction() (actions.Action, error) {
 	in, err := kcl.input.ReadString('\n')
-	kcl.loggr.Debug("read raw kcl action", "action", in)
 	if err != nil {
 		return nil, err
 	}
+	kcl.loggr.Debug("read raw kcl action", "action", in)
+
 	rawAction, err := actions.NewRawAction(in)
 	switch rawAction.ActionType {
 	case "initialize":
@@ -48,7 +53,7 @@ func (kcl *KCLProcess) readAction() (actions.Action, error) {
 	return nil, nil
 }
 
-func (kcl *KCLProcess) processAction(a actions.Action) error {
+func (kcl *KCLManager) processAction(a actions.Action) error {
 	// kcl.loggr.Debug("got kcl action", "action_type", in.ActionType())
 	err := a.Dispatch(kcl.recordProcessor)
 	if err != nil {
@@ -57,9 +62,9 @@ func (kcl *KCLProcess) processAction(a actions.Action) error {
 	return nil
 }
 
-func (kcl *KCLProcess) reportActionDone() {}
+func (kcl *KCLManager) reportActionDone() {}
 
-func (kcl *KCLProcess) Run() {
+func (kcl *KCLManager) Run() {
 	for {
 		action, err := kcl.readAction()
 		if err != nil {
