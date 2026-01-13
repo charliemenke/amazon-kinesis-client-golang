@@ -22,16 +22,45 @@ type KCLManager struct {
 	loggr           *slog.Logger
 }
 
-func NewKCLManager(input io.Reader, output, errOutput io.Writer, rp kcl.RecordProcessor) *KCLManager {
-	return &KCLManager{
-		input:           bufio.NewReader(input),
-		output:          output,
-		errOutput:       output,
+type KCLManagerOpts func(kclm *KCLManager)
+
+func NewKCLManager(rp kcl.RecordProcessor, opts... KCLManagerOpts) *KCLManager {
+	kclm := &KCLManager{
+		input:           bufio.NewReader(os.Stdin),
+		output:          os.Stdout,
+		errOutput:       os.Stderr,
 		recordProcessor: rp,
-		checkpointer:    checkpoint.NewCheckpointer(bufio.NewReader(input), output),
-		loggr:           slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
-		})),
+		loggr:           slog.Default(),
+	}
+	for _, opt := range opts {
+		opt(kclm)
+	}
+	// set checkpointer after apply opts since user could spec differ inputs and outputs
+	kclm.checkpointer = checkpoint.NewCheckpointer(kclm.input, kclm.output, kclm.loggr)
+	return kclm
+}
+
+func WithLogger(l *slog.Logger) KCLManagerOpts {
+	return func(kclm *KCLManager) {
+		kclm.loggr = l
+	}
+}
+
+func WithInput(i io.Reader) KCLManagerOpts {
+	return func(kclm *KCLManager) {
+		kclm.input = bufio.NewReader(i)
+	}
+}
+
+func WithOutput(o io.Writer) KCLManagerOpts {
+	return func(kclm *KCLManager) {
+		kclm.output = o
+	}
+}
+
+func WithErrOutput(eo io.Writer) KCLManagerOpts {
+	return func(kclm *KCLManager) {
+		kclm.errOutput = eo
 	}
 }
 
@@ -40,31 +69,33 @@ func (kcl *KCLManager) readAction() (actions.Action, error) {
 	if err != nil {
 		return nil, err
 	}
-	kcl.loggr.Debug("read raw kcl action", "action", in)
+	kcl.loggr.Debug("read raw stdin from kcl multilang", "stdin", in)
 
 	rawAction, err := actions.NewRawAction(in)
 	if err != nil {
 		return nil, fmt.Errorf("error reading kcl input action %s: %v", in, err)
 	}
+	kcl.loggr.Debug("kcl multilang action read", "action_type", rawAction.ActionType)
 
 	action, err := rawAction.Decode(kcl.recordProcessor, kcl.checkpointer)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding raw action into kcl action: %v", err)
 	}
 
 	return action, nil
 }
 
 func (kcl *KCLManager) processAction(a actions.Action) error {
-	kcl.loggr.Debug("got kcl action", "action_type", a.ActionType())
+	kcl.loggr.Debug("processing kcl multilang action request", "action_type", a.ActionType())
 	err := a.Dispatch()
 	if err != nil {
-		return err
+		return fmt.Errorf("error processing kcl multilang action request: %v", err)
 	}
 	return nil
 }
 
 func (kcl *KCLManager) reportActionDone(actionType string) error {
+	kcl.loggr.Debug("reporting success status back to kcl multilang process", "response_for", actionType)
 	output := map[string]string{"action": "status", "responseFor": actionType}
 	encoder := json.NewEncoder(kcl.output)
 	err := encoder.Encode(output)
@@ -89,5 +120,6 @@ func (kcl *KCLManager) Run() {
 		if err != nil {
 			panic(err)
 		}
+		kcl.loggr.Debug("waiting for next kcl multilang input request")
 	}
 }

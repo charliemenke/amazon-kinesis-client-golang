@@ -18,6 +18,5 @@ type RecordProcessor interface {
 	ProcessRecords(records []Record, lag int, cp *checkpoint.Checkpointer) error
 	LeaseLost() error
 	ShardEnded(shardSeqEnd string, cp *checkpoint.Checkpointer) error
-	Shutdown(reason string, cp *checkpoint.Checkpointer) error
 	ShutdownRequested(cp *checkpoint.Checkpointer) error
 }

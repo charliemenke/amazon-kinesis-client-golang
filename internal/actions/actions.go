@@ -47,12 +47,6 @@ func (a *rawAction) Decode(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer) 
 			return nil, err
 		}
 		return initAction, nil
-	case "shutdown":
-		shutdownAction, err := NewShutdownAction(rp, cp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return shutdownAction, nil
 	case "shutdownRequested":
 		shutdownRequestedAction, err := NewShutdownRequestedAction(rp, cp, a.Raw)
 		if err != nil {
