@@ -66,7 +66,7 @@ func (a *rawAction) Decode(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer) 
 		}
 		return leaseLostAction, nil
 	case "shardEnded":
-		shardEndedAction, err := NewShardEndedAction(rp, a.Raw)
+		shardEndedAction, err := NewShardEndedAction(rp, cp, a.Raw)
 		if err != nil {
 			return nil, err
 		}

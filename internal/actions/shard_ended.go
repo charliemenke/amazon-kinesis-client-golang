@@ -12,12 +12,11 @@ type ShardEndedAction struct {
 	Checkpointer *checkpoint.Checkpointer
 	Input struct {
 		ActionType             string       `json:"action"`
-		Checkpoint             string       `json:"checkpoint"`
 	}
 }
 
-func NewShardEndedAction(rp kcl.RecordProcessor, input []byte) (*ShardEndedAction, error) {
-	a := ShardEndedAction{RecordProcessor: rp}
+func NewShardEndedAction(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer, input []byte) (*ShardEndedAction, error) {
+	a := ShardEndedAction{RecordProcessor: rp, Checkpointer: cp}
 	err := json.Unmarshal(input, &a.Input)
 	if err != nil {
 		return nil, err
@@ -30,7 +29,7 @@ func (a *ShardEndedAction) ActionType() string {
 }
 
 func (a *ShardEndedAction) Dispatch() error {
-	err := a.RecordProcessor.ShardEnded(a.Input.Checkpoint, a.Checkpointer)
+	err := a.RecordProcessor.ShardEnded(a.Checkpointer)
 	if err != nil {
 		return err
 	}

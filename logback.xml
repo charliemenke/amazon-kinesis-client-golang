@@ -22,15 +22,15 @@
         </encoder>
     </appender>
 
-    <root level="WARN">
+    <root level="INFO">
         <appender-ref ref="${LOGGER:-MAIN}" />
         <appender-ref ref="CONSOLE" />
     </root>
     <logger name="software.amazon.kinesis.worker.platform.Ec2Resource" level="OFF" />
     <logger name="software.amazon.kinesis.multilang.DrainChildSTDERRTask" level="OFF" />
-    <logger name="org.apache.http" level="WARN" />
-    <logger name="com.amazonaws.auth" level="WARN" />
-    <logger name="com.amazonaws.request" level="WARN" />
-    <logger name="software.amazon.awssdk" level="WARN" />
-    <logger name="software.amazon.kinesis.common.DiagnosticUtils" level="WARN" />
+    <logger name="org.apache.http" level="INFO" />
+    <logger name="com.amazonaws.auth" level="INFO" />
+    <logger name="com.amazonaws.request" level="INFO" />
+    <logger name="software.amazon.awssdk" level="INFO" />
+    <logger name="software.amazon.kinesis.common.DiagnosticUtils" level="INFO" />
 </configuration>

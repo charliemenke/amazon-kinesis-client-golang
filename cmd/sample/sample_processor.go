@@ -53,9 +53,9 @@ func (rp *SimpleRecordProcessor) LeaseLost() error {
 	return nil
 }
 
-func (rp *SimpleRecordProcessor) ShardEnded(shardSeqNum string, cp *checkpoint.Checkpointer) error {
-	rp.Loggr.Info("kinesis shard fully consumed", "shard_id", rp.ShardId, "shard_end_seq_num", shardSeqNum)
-	err := cp.CheckpointSeqNum(shardSeqNum)
+func (rp *SimpleRecordProcessor) ShardEnded(cp *checkpoint.Checkpointer) error {
+	rp.Loggr.Info("kinesis shard fully consumed", "shard_id", rp.ShardId)
+	err := cp.CheckpointBatch()
 	if err != nil {
 		return err
 	}
