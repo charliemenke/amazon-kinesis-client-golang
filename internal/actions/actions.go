@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
 )
 
 type Action interface {
 	ActionType() string
-	Dispatch(rp kcl.RecordProcessor) error
+	Dispatch() error
 }
 
 type rawAction struct {
@@ -38,23 +39,45 @@ func NewRawAction(msg string) (rawAction, error) {
 	return rawAction, nil
 }
 
-func (a *rawAction) Decode() (Action, error) {
+func (a *rawAction) Decode(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer) (Action, error) {
 	switch a.ActionType {
 	case "initialize":
-		var initAction InitAction
-		err := json.Unmarshal(a.Raw, &initAction)
+		initAction, err := NewInitAction(rp, a.Raw)
 		if err != nil {
 			return nil, err
 		}
-		return &initAction, nil
+		return initAction, nil
 	case "shutdown":
+		shutdownAction, err := NewShutdownAction(rp, cp, a.Raw)
+		if err != nil {
+			return nil, err
+		}
+		return shutdownAction, nil
 	case "shutdownRequested":
+		shutdownRequestedAction, err := NewShutdownRequestedAction(rp, cp, a.Raw)
+		if err != nil {
+			return nil, err
+		}
+		return shutdownRequestedAction, nil
 	case "processRecords":
-	case "checkpoint":
+		processAction, err := NewProcessAction(rp, cp, a.Raw)
+		if err != nil {
+			return nil, err
+		}
+		return processAction, nil
 	case "leaseLost":
+		leaseLostAction, err := NewLeaseLostAction(rp, a.Raw)
+		if err != nil {
+			return nil, err
+		}
+		return leaseLostAction, nil
 	case "shardEnded":
+		shardEndedAction, err := NewShardEndedAction(rp, a.Raw)
+		if err != nil {
+			return nil, err
+		}
+		return shardEndedAction, nil
 	default:
 		return nil, fmt.Errorf("unsupported action type: %s", a.ActionType)
 	}
-	return nil, nil
 }

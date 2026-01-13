@@ -36,7 +36,7 @@ func (c *Checkpointer) CheckKCLResp() error {
 	}
 
 	if resp.Error != "" {
-		return fmt.Errorf("bad checkpoint ack from kcl: %s\n", err)
+		return fmt.Errorf("bad checkpoint ack from kcl: %s\n", resp.Error)
 	}
 	return nil
 }
@@ -55,7 +55,7 @@ func (c *Checkpointer) CheckpointBatch() error {
 	}
 	return nil
 }
-func (c *Checkpointer) CheckpointSeqNum(seqNum int) error {
+func (c *Checkpointer) CheckpointSeqNum(seqNum string) error {
 	output := map[string]any{
 		"action":         "checkpoint",
 		"sequenceNumber": seqNum,
@@ -72,7 +72,7 @@ func (c *Checkpointer) CheckpointSeqNum(seqNum int) error {
 	}
 	return nil
 }
-func (c *Checkpointer) CheckpointSubSeqNum(seqNum, subSeqNum int) error {
+func (c *Checkpointer) CheckpointSubSeqNum(seqNum string, subSeqNum int) error {
 	output := map[string]any{
 		"action":            "checkpoint",
 		"sequenceNumber":    seqNum,

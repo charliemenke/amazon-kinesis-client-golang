@@ -2,8 +2,11 @@ package kclmanager
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
+	"os"
 
 	"github.com/charliemenke/amazon-kinesis-client-golang/internal/actions"
 	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
@@ -26,7 +29,9 @@ func NewKCLManager(input io.Reader, output, errOutput io.Writer, rp kcl.RecordPr
 		errOutput:       output,
 		recordProcessor: rp,
 		checkpointer:    checkpoint.NewCheckpointer(bufio.NewReader(input), output),
-		loggr:           slog.Default(),
+		loggr:           slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		})),
 	}
 }
 
@@ -38,42 +43,51 @@ func (kcl *KCLManager) readAction() (actions.Action, error) {
 	kcl.loggr.Debug("read raw kcl action", "action", in)
 
 	rawAction, err := actions.NewRawAction(in)
-	switch rawAction.ActionType {
-	case "initialize":
-	case "shutdown":
-	case "shutdownRequested":
-	case "processRecords":
-	case "checkpoint":
-	case "leaseLost":
-	case "shardEnded":
+	if err != nil {
+		return nil, fmt.Errorf("error reading kcl input action %s: %v", in, err)
 	}
+
+	action, err := rawAction.Decode(kcl.recordProcessor, kcl.checkpointer)
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+
+	return action, nil
 }
 
 func (kcl *KCLManager) processAction(a actions.Action) error {
-	// kcl.loggr.Debug("got kcl action", "action_type", in.ActionType())
-	err := a.Dispatch(kcl.recordProcessor)
+	kcl.loggr.Debug("got kcl action", "action_type", a.ActionType())
+	err := a.Dispatch()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (kcl *KCLManager) reportActionDone() {}
+func (kcl *KCLManager) reportActionDone(actionType string) error {
+	output := map[string]string{"action": "status", "responseFor": actionType}
+	encoder := json.NewEncoder(kcl.output)
+	err := encoder.Encode(output)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (kcl *KCLManager) Run() {
+	kcl.loggr.Info("starting up kcl interface, waiting for first instruction...")
 	for {
 		action, err := kcl.readAction()
 		if err != nil {
-
+			panic(err)
 		}
 		err = kcl.processAction(action)
 		if err != nil {
-
+			panic(err)
 		}
-		kcl.reportActionDone()
+		err = kcl.reportActionDone(action.ActionType())
+		if err != nil {
+			panic(err)
+		}
 	}
 }

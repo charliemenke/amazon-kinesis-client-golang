@@ -1,33 +1,23 @@
 package kcl
 
-import "github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
+import (
+	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
+)
 
 type Record struct {
 	Action                      string `json:"action"`
 	Data                        string `json:"data"`
 	PartitionKey                string `json:"partitionKey"`
-	ApproximateArrivalTimestamp string `json:"approximateArrivalTimestamp"`
+	ApproximateArrivalTimestamp int `json:"approximateArrivalTimestamp"`
 	SequenceNumber              string `json:"sequenceNumber"`
-	SubSequenceNumber           string `json:"subSequenceNumber"`
+	SubSequenceNumber           int `json:"subSequenceNumber"`
 }
 
 type RecordProcessor interface {
-	Initialize(shardId, seqNum, subSeqNum string) error
-	ProcessRecords([]Record, *checkpoint.Checkpointer) error
-	Shutdown(reason string)
-}
-
-type SimpleRecordProcessor struct {
-}
-
-func (rp *SimpleRecordProcessor) Initialize() error {
-	return nil
-}
-
-func (rp *SimpleRecordProcessor) ProcessRecords(records []string) {
-	return
-}
-
-func (rp *SimpleRecordProcessor) Shutdown(reason string) {
-	return
+	Initialize(shardId, seqNum string, subSeqNum int) error
+	ProcessRecords(records []Record, lag int, cp *checkpoint.Checkpointer) error
+	LeaseLost() error
+	ShardEnded(shardSeqEnd string, cp *checkpoint.Checkpointer) error
+	Shutdown(reason string, cp *checkpoint.Checkpointer) error
+	ShutdownRequested(cp *checkpoint.Checkpointer) error
 }

@@ -7,18 +7,17 @@ import (
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
 )
 
-type ProcessAction struct {
+type ShardEndedAction struct {
 	RecordProcessor	kcl.RecordProcessor
 	Checkpointer *checkpoint.Checkpointer
 	Input struct {
 		ActionType             string       `json:"action"`
-		MillisBehindLatest int       `json:"millisBehindLatest"`
-		Records            []kcl.Record `json:"records"`
+		Checkpoint             string       `json:"checkpoint"`
 	}
 }
 
-func NewProcessAction(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer, input []byte) (*ProcessAction, error) {
-	a := ProcessAction{RecordProcessor: rp, Checkpointer: cp}
+func NewShardEndedAction(rp kcl.RecordProcessor, input []byte) (*ShardEndedAction, error) {
+	a := ShardEndedAction{RecordProcessor: rp}
 	err := json.Unmarshal(input, &a.Input)
 	if err != nil {
 		return nil, err
@@ -26,12 +25,12 @@ func NewProcessAction(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer, input
 	return &a, nil
 }
 
-func (a *ProcessAction) ActionType() string {
+func (a *ShardEndedAction) ActionType() string {
 	return a.Input.ActionType
 }
 
-func (a *ProcessAction) Dispatch() error {
-	err := a.RecordProcessor.ProcessRecords(a.Input.Records, a.Input.MillisBehindLatest, a.Checkpointer)
+func (a *ShardEndedAction) Dispatch() error {
+	err := a.RecordProcessor.ShardEnded(a.Input.Checkpoint, a.Checkpointer)
 	if err != nil {
 		return err
 	}

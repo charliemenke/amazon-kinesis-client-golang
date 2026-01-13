@@ -1,0 +1,36 @@
+<configuration>
+    <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_BASE_NAME:-logs/UnknownApp}.log</file>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--daily rollover -->
+            <fileNamePattern>${LOG_BASE_NAME:-logs/amazon-kinesis-client-golang}.%d{yyyy-MM-dd-HH}.log</fileNamePattern>
+            <!--keep 15 days' worth of history capped at 16GB total size -->
+            <maxHistory>15</maxHistory>
+            <totalSizeCap>16GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d [%thread] %-5level %logger{36} [%mdc{ShardId:-NONE}] - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d [%thread] %-5level %logger{36} [%mdc{ShardId:-NONE}] - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="WARN">
+        <appender-ref ref="${LOGGER:-MAIN}" />
+        <appender-ref ref="CONSOLE" />
+    </root>
+    <logger name="software.amazon.kinesis.worker.platform.Ec2Resource" level="OFF" />
+    <logger name="software.amazon.kinesis.multilang.DrainChildSTDERRTask" level="OFF" />
+    <logger name="org.apache.http" level="WARN" />
+    <logger name="com.amazonaws.auth" level="WARN" />
+    <logger name="com.amazonaws.request" level="WARN" />
+    <logger name="software.amazon.awssdk" level="WARN" />
+    <logger name="software.amazon.kinesis.common.DiagnosticUtils" level="WARN" />
+</configuration>
