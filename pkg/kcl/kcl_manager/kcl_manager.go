@@ -123,3 +123,19 @@ func (kcl *KCLManager) Run() {
 		kcl.loggr.Debug("waiting for next kcl multilang input request")
 	}
 }
+
+func (kcl *KCLManager) ProcessSingleInstruction() error {
+	action, err := kcl.readAction()
+	if err != nil {
+		panic(err)
+	}
+	err = kcl.processAction(action)
+	if err != nil {
+		panic(err)
+	}
+	err = kcl.reportActionDone(action.ActionType())
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
