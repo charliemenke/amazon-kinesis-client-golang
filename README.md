@@ -61,7 +61,7 @@ type RecordProcessor interface {
 ```
 
 Once you create your implementation of `RecordProcessor`, you can pass it to an instantiation of 
-`KCLManager` and call `Run()`.
+`Manager` and call `Run()`.
 
 ### Initialize
 
@@ -121,7 +121,7 @@ file to tune the kcl multilang logging.
 
 ## Advanced Usage
 
-While using `KCLManager` and implementing the `RecordProcessor` interface is the easiest way to get started, advanced users who need more fine-grained control over the KCL Multilang protocol and child process communication loop can choose to use the `kcl.MultilangInterface` struct directly.
+While using `Manager` and implementing the `RecordProcessor` interface is the easiest way to get started, advanced users who need more fine-grained control over the KCL Multilang protocol and child process communication loop can choose to use the `kcl.MultilangInterface` struct directly.
 
 This approach gives you direct access to read KCL actions and write responses, but requires a deep understanding of the KCL Multilang protocol. Only advanced users should consider this approach, as it bypasses the convenient abstractions provided by `KCLManager` and requires careful handling of all protocol interactions.
 
