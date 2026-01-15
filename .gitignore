@@ -29,5 +29,6 @@ go.work.sum
 
 jars/
 logs/
+.crush/
 Agents.md
 kinesis_put_records_test.json

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/actions"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/checkpoint"
@@ -26,8 +25,8 @@ type MultilangInterfaceOpts func(mli *MultilangInterface)
 
 func NewMultilangInterface(i io.Reader, o io.Writer, opts ...MultilangInterfaceOpts) *MultilangInterface {
 	kcli := &MultilangInterface{
-		input:  json.NewDecoder(os.Stdin),
-		output: json.NewEncoder(os.Stdout),
+		input:  json.NewDecoder(i),
+		output: json.NewEncoder(o),
 		loggr:  slog.Default(),
 	}
 	for _, opt := range opts {

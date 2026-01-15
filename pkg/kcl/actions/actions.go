@@ -6,6 +6,14 @@ import (
 
 )
 
+const (
+	INITITALIZE = "initalize"
+	PROCESS_RECORDS = "processRecords"
+	LEASE_LOST = "leaseLost"
+	SHARD_ENDED = "shardEnded"
+	SHUTDOWN_REQUESTED = "shutdownRequested"
+)
+
 type RawAction struct {
 	ActionType string `json:"action"`
 	Raw        []byte
@@ -34,7 +42,7 @@ func NewRawAction(msg string) (RawAction, error) {
 
 func (ra *RawAction) ToInitAction() (InitAction, error) {
 	var a InitAction
-	if ra.ActionType != "initialize" {
+	if ra.ActionType != INITITALIZE {
 		return a, fmt.Errorf("raw action type <%s> cannot be converted to InitAction", ra.ActionType)
 	}
 	err := json.Unmarshal(ra.Raw, &a)
@@ -45,7 +53,7 @@ func (ra *RawAction) ToInitAction() (InitAction, error) {
 }
 func (ra *RawAction) ToProcessAction() (ProcessAction, error) {
 	var a ProcessAction
-	if ra.ActionType != "processRecords" {
+	if ra.ActionType != PROCESS_RECORDS {
 		return a, fmt.Errorf("raw action type <%s> cannot be converted to ProcessAction", ra.ActionType)
 	}
 	err := json.Unmarshal(ra.Raw, &a)
@@ -56,7 +64,7 @@ func (ra *RawAction) ToProcessAction() (ProcessAction, error) {
 }
 func (ra *RawAction) ToLeaseLostAction() (LeaseLostAction, error) {
 	var a LeaseLostAction
-	if ra.ActionType != "leastLost" {
+	if ra.ActionType != LEASE_LOST {
 		return a, fmt.Errorf("raw action type <%s> cannot be converted to LeastLostAction", ra.ActionType)
 	}
 	err := json.Unmarshal(ra.Raw, &a)
@@ -67,7 +75,7 @@ func (ra *RawAction) ToLeaseLostAction() (LeaseLostAction, error) {
 }
 func (ra *RawAction) ToShardEndedAction() (ShardEndedAction, error) {
 	var a ShardEndedAction
-	if ra.ActionType != "shardEnded" {
+	if ra.ActionType != SHARD_ENDED {
 		return a, fmt.Errorf("raw action type <%s> cannot be converted to ShardEndedAction", ra.ActionType)
 	}
 	err := json.Unmarshal(ra.Raw, &a)
@@ -78,7 +86,7 @@ func (ra *RawAction) ToShardEndedAction() (ShardEndedAction, error) {
 }
 func (ra *RawAction) ToShutdownRequestedAction() (ShutdownRequestedAction, error) {
 	var a ShutdownRequestedAction
-	if ra.ActionType != "shutdownRequested" {
+	if ra.ActionType != SHUTDOWN_REQUESTED {
 		return a, fmt.Errorf("raw action type <%s> cannot be converted to ShutDownRequestedAction", ra.ActionType)
 	}
 	err := json.Unmarshal(ra.Raw, &a)

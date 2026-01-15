@@ -52,29 +52,29 @@ func (kclm *Manager) processRawAction(ra actions.RawAction) error {
 	// capture recordprossor method error for all cases
 	var err error
 	switch ra.ActionType {
-	case "initialize":
+	case actions.INITITALIZE:
 		var a actions.InitAction
 		a, err = ra.ToInitAction()
 		if err != nil {
 			return err
 		}
 		err = kclm.recordProcessor.Initialize(a.ShardId, a.SeqNum, a.SubSeqNum)
-	case "shutdownRequested":
+	case actions.SHUTDOWN_REQUESTED:
 		// no need to unmarshal to concrete action type
 		// since the action contains nothing other than action name
 		err = kclm.recordProcessor.ShutdownRequested(kclm.interfacer.Checkpointer)
-	case "processRecords":
+	case actions.PROCESS_RECORDS:
 		var a actions.ProcessAction
 		a, err = ra.ToProcessAction()
 		if err != nil {
 			return err
 		}
 		err = kclm.recordProcessor.ProcessRecords(a.Records, a.MillisBehindLatest, kclm.interfacer.Checkpointer)
-	case "leaseLost":
+	case actions.LEASE_LOST:
 		// no need to unmarshal to concrete action type
 		// since the action contains nothing other than action name
 		err = kclm.recordProcessor.LeaseLost()
-	case "shardEnded":
+	case actions.SHARD_ENDED:
 		// no need to unmarshal to concrete action type
 		// since the action contains nothing other than action name
 		err = kclm.recordProcessor.ShardEnded(kclm.interfacer.Checkpointer)

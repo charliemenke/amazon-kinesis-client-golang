@@ -116,8 +116,8 @@ minutes to spin up.
 
 > Note: since the kcl multilang and your record processor communicate over stdin/out, ensure your 
 record processor writes its logs to stderr (if you use log or slog, this is the default output) to 
-avoid errors. Additionally, you can edit the `logback.xml` file to tune the kcl multilang process 
-logging.
+avoid errors. Additionally, to suppress KCL's verbose logging you can edit/create the `logback.xml` 
+file to tune the kcl multilang logging.
 
 ## Advanced Usage
 
