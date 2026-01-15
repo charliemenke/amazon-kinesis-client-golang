@@ -1,25 +1,23 @@
-package kclmanager
+package kcl
 
 import (
 	"fmt"
 	"io"
 	"log/slog"
 
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/actions"
-	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
-	kclinterfacer "github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/kcl_interfacer"
+	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/actions"
 )
 
-type KCLManager struct {
-	recordProcessor kcl.RecordProcessor
-	interfacer      *kclinterfacer.KCLInterface
+type Manager struct {
+	recordProcessor RecordProcessor
+	interfacer      *MultilangInterface
 	loggr           *slog.Logger
 }
 
-type KCLManagerOpts func(kclm *KCLManager)
+type ManagerOpts func(kclm *Manager)
 
-func NewKCLManager(i io.Reader, o io.Writer, rp kcl.RecordProcessor, opts ...KCLManagerOpts) *KCLManager {
-	kclm := &KCLManager{
+func NewManager(i io.Reader, o io.Writer, rp RecordProcessor, opts ...ManagerOpts) *Manager {
+	kclm := &Manager{
 		recordProcessor: rp,
 		loggr:           slog.Default(),
 	}
@@ -27,19 +25,19 @@ func NewKCLManager(i io.Reader, o io.Writer, rp kcl.RecordProcessor, opts ...KCL
 		opt(kclm)
 	}
 	// set interffacer after apply opts since user could spec different logger
-	kclm.interfacer = kclinterfacer.NewKCLInterface(i, o, kclinterfacer.WithLogger(kclm.loggr))
+	kclm.interfacer = NewMultilangInterface(i, o, WithInterfaceLogger(kclm.loggr))
 	return kclm
 }
 
-func WithLogger(l *slog.Logger) KCLManagerOpts {
-	return func(kclm *KCLManager) {
+func WithManagerLogger(l *slog.Logger) ManagerOpts {
+	return func(kclm *Manager) {
 		kclm.loggr = l
 	}
 }
 
 // processRawAction calls different RecordProcessor methods
 // depending on what type of KCL Action the rawAction is.
-func (kclm *KCLManager) processRawAction(ra actions.RawAction) error {
+func (kclm *Manager) processRawAction(ra actions.RawAction) error {
 	kclm.loggr.Debug("processing kcl multilang raw action request", "action_type", ra.ActionType)
 	// some of this "decoding" of the kcl raw action seems a bit pointless
 	// (namely for actions like leastLost) because some of the actions dont
@@ -91,12 +89,12 @@ func (kclm *KCLManager) processRawAction(ra actions.RawAction) error {
 }
 
 // Run is the quickest way to start using this KCL Multilang interface
-// to consume kinesis records. It uses an instance of KCLInterfacer to
+// to consume kinesis records. It uses an instance of a MultilangInterfacer to
 // read Actions requested by the KCL Multilang process, then calls specific
 // methods on the provided RecordProcessor depending on which action was
 // requested. Finally it uses the interfacer again to write the completed
 // status message back to the KCL Multilang process.
-func (kclm *KCLManager) Run() {
+func (kclm *Manager) Run() {
 	kclm.loggr.Info("starting up kcl interface, waiting for first instruction...")
 	for {
 		rawAction, err := kclm.interfacer.ReadActionRequest()

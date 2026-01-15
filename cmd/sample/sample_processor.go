@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
-	kclmanager "github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/kcl_manager"
+	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/actions"
+	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/checkpoint"
 )
 
 type SimpleRecordProcessor struct {
@@ -29,7 +29,7 @@ func (rp *SimpleRecordProcessor) Initialize(shardId, seqNum string, subSeqNum in
 	return nil
 }
 
-func (rp *SimpleRecordProcessor) ProcessRecords(records []kcl.Record, lag int, cp *checkpoint.Checkpointer) error {
+func (rp *SimpleRecordProcessor) ProcessRecords(records []actions.Record, lag int, cp *checkpoint.Checkpointer) error {
 	rp.Loggr.Info("got records to process", "amount", len(records), "lag_in_ms", lag)
 	for _, r := range records {
 		rp.Loggr.Info(fmt.Sprintf("record [ partKey: %s, seqNum: %s, subSeqNum: %d, arrivalTS: %d ]", r.PartitionKey, r.SequenceNumber, r.SubSequenceNumber, r.ApproximateArrivalTimestamp))
@@ -75,11 +75,11 @@ func main() {
 		Level: slog.LevelDebug,
 	}))
 
-	kcl := kclmanager.NewKCLManager(
+	kcl := kcl.NewManager(
 		os.Stdin,
 		os.Stdout,
 		&SimpleRecordProcessor{Loggr: loggr},
-		kclmanager.WithLogger(loggr),
+		kcl.WithManagerLogger(loggr),
 	)
 
 	kcl.Run()

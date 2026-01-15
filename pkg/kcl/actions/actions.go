@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
 )
 
 type RawAction struct {
@@ -99,8 +98,21 @@ type InitAction struct {
 type ProcessAction struct {
 	Action             string       `json:"action"`
 	MillisBehindLatest int          `json:"millisBehindLatest"`
-	Records            []kcl.Record `json:"records"`
+	Records            []Record `json:"records"`
 }
+
+// Record defines the json shape of a Kinesis "record" as
+// it comes over in the KCL Multilang process action
+// ProcessRecords request.
+type Record struct {
+	Action                      string `json:"action"`
+	Data                        string `json:"data"`
+	PartitionKey                string `json:"partitionKey"`
+	ApproximateArrivalTimestamp int    `json:"approximateArrivalTimestamp"`
+	SequenceNumber              string `json:"sequenceNumber"`
+	SubSequenceNumber           int    `json:"subSequenceNumber"`
+}
+
 
 type LeaseLostAction struct {
 	Action string `json:"action"`

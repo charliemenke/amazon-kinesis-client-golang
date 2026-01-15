@@ -1,4 +1,4 @@
-package kclinterfacer
+package kcl
 
 import (
 	"encoding/json"
@@ -7,25 +7,25 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/actions"
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
+	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/actions"
+	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/checkpoint"
 )
 
-// KCLInterface is the interface in which you can communicate
+// MultilangInterface is the interface in which you can communicate
 // with a the KCL Multilang process. It includes methods needed
 // to read and write actions/requests, as well as a Checkpointer
 // to allow you to checkpoint your consumption progress.
-type KCLInterface struct {
+type MultilangInterface struct {
 	input        *json.Decoder
 	output       *json.Encoder
 	loggr        *slog.Logger
 	Checkpointer *checkpoint.Checkpointer
 }
 
-type KCLInterfaceOpts func(kclI *KCLInterface)
+type MultilangInterfaceOpts func(mli *MultilangInterface)
 
-func NewKCLInterface(i io.Reader, o io.Writer, opts ...KCLInterfaceOpts) *KCLInterface {
-	kcli := &KCLInterface{
+func NewMultilangInterface(i io.Reader, o io.Writer, opts ...MultilangInterfaceOpts) *MultilangInterface {
+	kcli := &MultilangInterface{
 		input:  json.NewDecoder(os.Stdin),
 		output: json.NewEncoder(os.Stdout),
 		loggr:  slog.Default(),
@@ -37,8 +37,8 @@ func NewKCLInterface(i io.Reader, o io.Writer, opts ...KCLInterfaceOpts) *KCLInt
 	return kcli
 }
 
-func WithLogger(l *slog.Logger) KCLInterfaceOpts {
-	return func(kcli *KCLInterface) {
+func WithInterfaceLogger(l *slog.Logger) MultilangInterfaceOpts {
+	return func(kcli *MultilangInterface) {
 		kcli.loggr = l
 	}
 }
@@ -47,7 +47,7 @@ func WithLogger(l *slog.Logger) KCLInterfaceOpts {
 // request. KCL Multilang sends its action requests over stdout in the
 // form of json. Please see `internal/actions/` for a list of potential
 // KCL actions requested.
-func (kcli *KCLInterface) ReadActionRequest() (actions.RawAction, error) {
+func (kcli *MultilangInterface) ReadActionRequest() (actions.RawAction, error) {
 	var rawAction actions.RawAction
 	err := kcli.input.Decode(&rawAction)
 	if err != nil {
@@ -63,7 +63,7 @@ func (kcli *KCLInterface) ReadActionRequest() (actions.RawAction, error) {
 // sent to stdout in the following format after every successfull action:
 //
 //	{ "action": "status", "responseFor": "<action type you completed>" }
-func (kcli *KCLInterface) WriteActionComplete(actionType string) error {
+func (kcli *MultilangInterface) WriteActionComplete(actionType string) error {
 	kcli.loggr.Debug("reporting success status back to kcl multilang process", "response_for", actionType)
 	output := map[string]string{"action": "status", "responseFor": actionType}
 	err := kcli.output.Encode(output)
