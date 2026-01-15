@@ -4,34 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
 )
 
-type Action interface {
-	ActionType() string
-	Dispatch() error
-}
-
-type rawAction struct {
+type RawAction struct {
 	ActionType string `json:"action"`
 	Raw        []byte
 }
 
-func (a *rawAction) UnmarshalJSON(data []byte) error {
-	type Alias rawAction
+func (a *RawAction) UnmarshalJSON(data []byte) error {
+	type Alias RawAction
 	var tmp Alias
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	*a = rawAction(tmp)
+	*a = RawAction(tmp)
 	a.Raw = data
 	return nil
 }
 
-func NewRawAction(msg string) (rawAction, error) {
-	var rawAction rawAction
+func NewRawAction(msg string) (RawAction, error) {
+	var rawAction RawAction
 	err := json.Unmarshal([]byte(msg), &rawAction)
 	if err != nil {
 		return rawAction, err
@@ -39,39 +33,83 @@ func NewRawAction(msg string) (rawAction, error) {
 	return rawAction, nil
 }
 
-func (a *rawAction) Decode(rp kcl.RecordProcessor, cp *checkpoint.Checkpointer) (Action, error) {
-	switch a.ActionType {
-	case "initialize":
-		initAction, err := NewInitAction(rp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return initAction, nil
-	case "shutdownRequested":
-		shutdownRequestedAction, err := NewShutdownRequestedAction(rp, cp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return shutdownRequestedAction, nil
-	case "processRecords":
-		processAction, err := NewProcessAction(rp, cp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return processAction, nil
-	case "leaseLost":
-		leaseLostAction, err := NewLeaseLostAction(rp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return leaseLostAction, nil
-	case "shardEnded":
-		shardEndedAction, err := NewShardEndedAction(rp, cp, a.Raw)
-		if err != nil {
-			return nil, err
-		}
-		return shardEndedAction, nil
-	default:
-		return nil, fmt.Errorf("unsupported action type: %s", a.ActionType)
+func (ra *RawAction) ToInitAction() (InitAction, error) {
+	var a InitAction
+	if ra.ActionType != "initialize" {
+		return a, fmt.Errorf("raw action type <%s> cannot be converted to InitAction", ra.ActionType)	
 	}
+	err := json.Unmarshal(ra.Raw, &a)
+	if err != nil {
+		return a, err
+	}
+	return a, nil
+}
+func (ra *RawAction) ToProcessAction() (ProcessAction, error) {
+	var a ProcessAction
+	if ra.ActionType != "processRecords" {
+		return a, fmt.Errorf("raw action type <%s> cannot be converted to ProcessAction", ra.ActionType)	
+	}
+	err := json.Unmarshal(ra.Raw, &a)
+	if err != nil {
+		return a, err
+	}
+	return a, nil
+}
+func (ra *RawAction) ToLeaseLostAction() (LeaseLostAction, error) {
+	var a LeaseLostAction
+	if ra.ActionType != "leastLost" {
+		return a, fmt.Errorf("raw action type <%s> cannot be converted to LeastLostAction", ra.ActionType)	
+	}
+	err := json.Unmarshal(ra.Raw, &a)
+	if err != nil {
+		return a, err
+	}
+	return a, nil
+}
+func (ra *RawAction) ToShardEndedAction() (ShardEndedAction, error) {
+	var a ShardEndedAction
+	if ra.ActionType != "shardEnded" {
+		return a, fmt.Errorf("raw action type <%s> cannot be converted to ShardEndedAction", ra.ActionType)	
+	}
+	err := json.Unmarshal(ra.Raw, &a)
+	if err != nil {
+		return a, err
+	}
+	return a, nil
+}
+func (ra *RawAction) ToShutdownRequestedAction() (ShutdownRequestedAction, error) {
+	var a ShutdownRequestedAction
+	if ra.ActionType != "shutdownRequested" {
+		return a, fmt.Errorf("raw action type <%s> cannot be converted to ShutDownRequestedAction", ra.ActionType)	
+	}
+	err := json.Unmarshal(ra.Raw, &a)
+	if err != nil {
+		return a, err
+	}
+	return a, nil
+}
+
+type InitAction struct {
+	Action    string `json:"action"`
+	ShardId   string `json:"shardId"`
+	SeqNum    string `json:"sequenceNumber"`
+	SubSeqNum int `json:"subSequenceNumber"`
+}
+
+type ProcessAction struct {
+	Action             string       `json:"action"`
+	MillisBehindLatest int       `json:"millisBehindLatest"`
+	Records            []kcl.Record `json:"records"`
+}
+
+type LeaseLostAction struct {
+	Action             string       `json:"action"`
+}
+
+type ShardEndedAction struct {
+	Action             string       `json:"action"`
+}
+
+type ShutdownRequestedAction struct {
+	Action             string       `json:"action"`
 }

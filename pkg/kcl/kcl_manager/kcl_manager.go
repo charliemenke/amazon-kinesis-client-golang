@@ -1,42 +1,33 @@
 package kclmanager
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 
 	"github.com/charliemenke/amazon-kinesis-client-golang/internal/actions"
-	"github.com/charliemenke/amazon-kinesis-client-golang/internal/checkpoint"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl"
+	kclinterfacer "github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/kcl_interfacer"
 )
 
 type KCLManager struct {
-	input           *bufio.Reader
-	output          io.Writer
-	errOutput       io.Writer
 	recordProcessor kcl.RecordProcessor
-	checkpointer    *checkpoint.Checkpointer
+	interfacer		*kclinterfacer.KCLInterface
 	loggr           *slog.Logger
 }
 
 type KCLManagerOpts func(kclm *KCLManager)
 
-func NewKCLManager(rp kcl.RecordProcessor, opts... KCLManagerOpts) *KCLManager {
+func NewKCLManager(i io.Reader, o io.Writer, rp kcl.RecordProcessor, opts... KCLManagerOpts) *KCLManager {
 	kclm := &KCLManager{
-		input:           bufio.NewReader(os.Stdin),
-		output:          os.Stdout,
-		errOutput:       os.Stderr,
 		recordProcessor: rp,
 		loggr:           slog.Default(),
 	}
 	for _, opt := range opts {
 		opt(kclm)
 	}
-	// set checkpointer after apply opts since user could spec differ inputs and outputs
-	kclm.checkpointer = checkpoint.NewCheckpointer(kclm.input, kclm.output, kclm.loggr)
+	// set interffacer after apply opts since user could spec different logger
+	kclm.interfacer = kclinterfacer.NewKCLInterface(i, o, kclinterfacer.WithLogger(kclm.loggr))
 	return kclm
 }
 
@@ -46,96 +37,81 @@ func WithLogger(l *slog.Logger) KCLManagerOpts {
 	}
 }
 
-func WithInput(i io.Reader) KCLManagerOpts {
-	return func(kclm *KCLManager) {
-		kclm.input = bufio.NewReader(i)
+// processRawAction calls different RecordProcessor methods
+// depending on what type of KCL Action the rawAction is.
+func (kclm *KCLManager) processRawAction(ra actions.RawAction) error {
+	kclm.loggr.Debug("processing kcl multilang raw action request", "action_type", ra.ActionType)
+	// some of this "decoding" of the kcl raw action seems a bit pointless
+	// (namely for actions like leastLost) because some of the actions dont
+	// actually contain any additional information other than their action
+	// name. Regaurdless, this is done to seperate the buisness logic of
+	// consuming input from kcl into two steps while retaining seperate 
+	// action types:
+	//     1. Read in stdinput and confirm it is some sort of action (RawAction)
+	//     2. Depending on what *type* of action, unmarshal it into its
+	//        concrete type and call the relevent record processor method
+
+	// capture recordprossor method error for all cases
+	var err error
+	switch ra.ActionType {
+	case "initialize":
+		var a actions.InitAction
+		a, err = ra.ToInitAction()
+		if err != nil {
+			return err
+		}
+		err = kclm.recordProcessor.Initialize(a.ShardId, a.SeqNum, a.SubSeqNum)
+	case "shutdownRequested":
+		// no need to unmarshal to concrete action type
+		// since the action contains nothing other than action name
+		err = kclm.recordProcessor.ShutdownRequested(kclm.interfacer.Checkpointer)
+	case "processRecords":
+		var a actions.ProcessAction
+		a, err = ra.ToProcessAction()
+		if err != nil {
+			return err
+		}
+		err = kclm.recordProcessor.ProcessRecords(a.Records, a.MillisBehindLatest, kclm.interfacer.Checkpointer)
+	case "leaseLost":
+		// no need to unmarshal to concrete action type
+		// since the action contains nothing other than action name
+		err = kclm.recordProcessor.LeaseLost()
+	case "shardEnded":
+		// no need to unmarshal to concrete action type
+		// since the action contains nothing other than action name
+		err = kclm.recordProcessor.ShardEnded(kclm.interfacer.Checkpointer)
+	default:
+		return fmt.Errorf("unsupported action type: %s", ra.ActionType)
 	}
-}
-
-func WithOutput(o io.Writer) KCLManagerOpts {
-	return func(kclm *KCLManager) {
-		kclm.output = o
-	}
-}
-
-func WithErrOutput(eo io.Writer) KCLManagerOpts {
-	return func(kclm *KCLManager) {
-		kclm.errOutput = eo
-	}
-}
-
-func (kcl *KCLManager) readAction() (actions.Action, error) {
-	in, err := kcl.input.ReadString('\n')
-	if err != nil {
-		return nil, err
-	}
-	kcl.loggr.Debug("read raw stdin from kcl multilang", "stdin", in)
-
-	rawAction, err := actions.NewRawAction(in)
-	if err != nil {
-		return nil, fmt.Errorf("error reading kcl input action %s: %v", in, err)
-	}
-	kcl.loggr.Debug("kcl multilang action read", "action_type", rawAction.ActionType)
-
-	action, err := rawAction.Decode(kcl.recordProcessor, kcl.checkpointer)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding raw action into kcl action: %v", err)
-	}
-
-	return action, nil
-}
-
-func (kcl *KCLManager) processAction(a actions.Action) error {
-	kcl.loggr.Debug("processing kcl multilang action request", "action_type", a.ActionType())
-	err := a.Dispatch()
-	if err != nil {
-		return fmt.Errorf("error processing kcl multilang action request: %v", err)
-	}
-	return nil
-}
-
-func (kcl *KCLManager) reportActionDone(actionType string) error {
-	kcl.loggr.Debug("reporting success status back to kcl multilang process", "response_for", actionType)
-	output := map[string]string{"action": "status", "responseFor": actionType}
-	encoder := json.NewEncoder(kcl.output)
-	err := encoder.Encode(output)
+	// handle recordprocessor err if not nil
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (kcl *KCLManager) Run() {
-	kcl.loggr.Info("starting up kcl interface, waiting for first instruction...")
-	for {
-		action, err := kcl.readAction()
-		if err != nil {
-			panic(err)
-		}
-		err = kcl.processAction(action)
-		if err != nil {
-			panic(err)
-		}
-		err = kcl.reportActionDone(action.ActionType())
-		if err != nil {
-			panic(err)
-		}
-		kcl.loggr.Debug("waiting for next kcl multilang input request")
-	}
-}
 
-func (kcl *KCLManager) ProcessSingleInstruction() error {
-	action, err := kcl.readAction()
-	if err != nil {
-		panic(err)
+// Run is the quickest way to start using this KCL Multilang interface
+// to consume kinesis records. It uses an instance of KCLInterfacer to
+// read Actions requested by the KCL Multilang process, then calls specific
+// methods on the provided RecordProcessor depending on which action was
+// requested. Finally it uses the interfacer again to write the completed
+// status message back to the KCL Multilang process.
+func (kclm *KCLManager) Run() {
+	kclm.loggr.Info("starting up kcl interface, waiting for first instruction...")
+	for {
+		rawAction, err := kclm.interfacer.ReadActionRequest()
+		if err != nil {
+			panic(err)
+		}
+		err = kclm.processRawAction(rawAction)
+		if err != nil {
+			panic(err)
+		}
+		err = kclm.interfacer.WriteActionComplete(rawAction.ActionType)
+		if err != nil {
+			panic(err)
+		}
+		kclm.loggr.Debug("waiting for next kcl multilang input request")
 	}
-	err = kcl.processAction(action)
-	if err != nil {
-		panic(err)
-	}
-	err = kcl.reportActionDone(action.ActionType())
-	if err != nil {
-		panic(err)
-	}
-	return nil
 }

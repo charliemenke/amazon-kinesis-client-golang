@@ -29,3 +29,4 @@ go.work.sum
 
 jars/
 logs/
+kinesis_put_records_test.json

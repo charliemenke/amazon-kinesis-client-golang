@@ -17,15 +17,19 @@ type checkPointResp struct {
 
 type Checkpointer struct {
 	input  *bufio.Reader
-	output io.Writer
+	output *json.Encoder
 	loggr *slog.Logger
 }
 
-func NewCheckpointer(input *bufio.Reader, output io.Writer, loggr *slog.Logger) *Checkpointer {
-	return &Checkpointer{input: input, output: output, loggr: loggr}
+func NewCheckpointer(input io.Reader, output io.Writer, loggr *slog.Logger) *Checkpointer {
+	return &Checkpointer{
+		input: bufio.NewReader(input),
+		output: json.NewEncoder(output),
+		loggr: loggr,
+	}
 }
 
-func (c *Checkpointer) CheckKCLResp() error {
+func (c *Checkpointer) checkKCLResp() error {
 	in, err := c.input.ReadString('\n')
 	if err != nil {
 		return err
@@ -47,13 +51,12 @@ func (c *Checkpointer) CheckKCLResp() error {
 func (c *Checkpointer) CheckpointBatch() error {
 	c.loggr.Debug("got checkpoint batch request from record processor")
 	output := map[string]string{"action": "checkpoint"}
-	encoder := json.NewEncoder(c.output)
-	err := encoder.Encode(output)
+	err := c.output.Encode(output)
 	if err != nil {
 		return err
 	}
 
-	err = c.CheckKCLResp()
+	err = c.checkKCLResp()
 	if err != nil {
 		return err
 	}
@@ -65,13 +68,12 @@ func (c *Checkpointer) CheckpointSeqNum(seqNum string) error {
 		"action":         "checkpoint",
 		"sequenceNumber": seqNum,
 	}
-	encoder := json.NewEncoder(c.output)
-	err := encoder.Encode(output)
+	err := c.output.Encode(output)
 	if err != nil {
 		return err
 	}
 
-	err = c.CheckKCLResp()
+	err = c.checkKCLResp()
 	if err != nil {
 		return err
 	}
@@ -84,13 +86,12 @@ func (c *Checkpointer) CheckpointSubSeqNum(seqNum string, subSeqNum int) error {
 		"sequenceNumber":    seqNum,
 		"subSequenceNumber": subSeqNum,
 	}
-	encoder := json.NewEncoder(c.output)
-	err := encoder.Encode(output)
+	err := c.output.Encode(output)
 	if err != nil {
 		return err
 	}
 
-	err = c.CheckKCLResp()
+	err = c.checkKCLResp()
 	if err != nil {
 		return err
 	}

@@ -76,6 +76,8 @@ func main() {
 	}))
 
 	kcl := kclmanager.NewKCLManager(
+		os.Stdin,
+		os.Stdout,
 		&SimpleRecordProcessor{Loggr: loggr},
 		kclmanager.WithLogger(loggr),
 		)
