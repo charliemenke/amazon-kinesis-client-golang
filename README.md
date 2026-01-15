@@ -121,12 +121,18 @@ file to tune the kcl multilang logging.
 
 ## Advanced Usage
 
-While using `Manager` and implementing the `RecordProcessor` interface is the easiest way to get started, advanced users who need more fine-grained control over the KCL Multilang protocol and child process communication loop can choose to use the `kcl.MultilangInterface` struct directly.
+While using `Manager` and implementing the `RecordProcessor` interface is the easiest way to get 
+started, advanced users who need more fine-grained control over the KCL Multilang protocol and 
+child process communication loop can choose to use the `kcl.MultilangInterface` struct directly.
 
-This approach gives you direct access to read KCL actions and write responses, but requires a deep understanding of the KCL Multilang protocol. Only advanced users should consider this approach, as it bypasses the convenient abstractions provided by `KCLManager` and requires careful handling of all protocol interactions.
+This approach gives you direct access to read KCL actions and write responses, but requires a deep 
+understanding of the KCL Multilang protocol. Only advanced users should consider this approach, as 
+it bypasses the convenient abstractions provided by `KCLManager` and requires careful handling of 
+all protocol interactions.
 
 To use the interface directly, you would:
 1. Create a `kcl.MultilangInterface` with your input/output streams
 2. Read raw actions using `ReadActionRequest()`
 3. Handle each action type manually according to the KCL Multilang protocol
 4. Write completion responses using `WriteActionComplete()`
+5. Checkpoint when appropriate using the `kcl.MultilangInterface.Checkpoint` member
