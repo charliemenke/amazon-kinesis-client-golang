@@ -16,19 +16,19 @@ import (
 // to read and write actions/requests, as well as a Checkpointer
 // to allow you to checkpoint your consumption progress.
 type KCLInterface struct {
-	input *json.Decoder
-	output *json.Encoder
-	loggr *slog.Logger
-	Checkpointer	*checkpoint.Checkpointer
+	input        *json.Decoder
+	output       *json.Encoder
+	loggr        *slog.Logger
+	Checkpointer *checkpoint.Checkpointer
 }
 
 type KCLInterfaceOpts func(kclI *KCLInterface)
 
-func NewKCLInterface(i io.Reader, o io.Writer, opts... KCLInterfaceOpts) *KCLInterface {
+func NewKCLInterface(i io.Reader, o io.Writer, opts ...KCLInterfaceOpts) *KCLInterface {
 	kcli := &KCLInterface{
-		input: json.NewDecoder(os.Stdin),
+		input:  json.NewDecoder(os.Stdin),
 		output: json.NewEncoder(os.Stdout),
-		loggr: slog.Default(),
+		loggr:  slog.Default(),
 	}
 	for _, opt := range opts {
 		opt(kcli)
@@ -61,7 +61,8 @@ func (kcli *KCLInterface) ReadActionRequest() (actions.RawAction, error) {
 // WriteActionComplete writes the expected json response to KCL Multilang
 // process to the output. KCL Multilang expects a json formated response
 // sent to stdout in the following format after every successfull action:
-//   { "action": "status", "responseFor": "<action type you completed>" }
+//
+//	{ "action": "status", "responseFor": "<action type you completed>" }
 func (kcli *KCLInterface) WriteActionComplete(actionType string) error {
 	kcli.loggr.Debug("reporting success status back to kcl multilang process", "response_for", actionType)
 	output := map[string]string{"action": "status", "responseFor": actionType}

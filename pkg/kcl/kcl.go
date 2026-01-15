@@ -5,19 +5,19 @@ import (
 )
 
 // Record defines the json shape of a Kinesis "record" as
-// it comes over in the KCL Multilang process action 
+// it comes over in the KCL Multilang process action
 // ProcessRecords request.
 type Record struct {
 	Action                      string `json:"action"`
 	Data                        string `json:"data"`
 	PartitionKey                string `json:"partitionKey"`
-	ApproximateArrivalTimestamp int `json:"approximateArrivalTimestamp"`
+	ApproximateArrivalTimestamp int    `json:"approximateArrivalTimestamp"`
 	SequenceNumber              string `json:"sequenceNumber"`
-	SubSequenceNumber           int `json:"subSequenceNumber"`
+	SubSequenceNumber           int    `json:"subSequenceNumber"`
 }
 
 // RecordProcessor is a quick start interface that you can implement
-// and use with KCLManager to quickly start consuming records from a 
+// and use with KCLManager to quickly start consuming records from a
 // kinesis stream
 type RecordProcessor interface {
 	Initialize(shardId, seqNum string, subSeqNum int) error

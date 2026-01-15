@@ -17,7 +17,7 @@ type SimpleRecordProcessor struct {
 	SubSeqNum              int
 	LastProcessedSeqNum    string
 	LastProcessedSubSeqNum int
-	Loggr	*slog.Logger
+	Loggr                  *slog.Logger
 }
 
 func (rp *SimpleRecordProcessor) Initialize(shardId, seqNum string, subSeqNum int) error {
@@ -80,7 +80,7 @@ func main() {
 		os.Stdout,
 		&SimpleRecordProcessor{Loggr: loggr},
 		kclmanager.WithLogger(loggr),
-		)
+	)
 
 	kcl.Run()
 }

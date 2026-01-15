@@ -12,13 +12,13 @@ import (
 
 type KCLManager struct {
 	recordProcessor kcl.RecordProcessor
-	interfacer		*kclinterfacer.KCLInterface
+	interfacer      *kclinterfacer.KCLInterface
 	loggr           *slog.Logger
 }
 
 type KCLManagerOpts func(kclm *KCLManager)
 
-func NewKCLManager(i io.Reader, o io.Writer, rp kcl.RecordProcessor, opts... KCLManagerOpts) *KCLManager {
+func NewKCLManager(i io.Reader, o io.Writer, rp kcl.RecordProcessor, opts ...KCLManagerOpts) *KCLManager {
 	kclm := &KCLManager{
 		recordProcessor: rp,
 		loggr:           slog.Default(),
@@ -45,7 +45,7 @@ func (kclm *KCLManager) processRawAction(ra actions.RawAction) error {
 	// (namely for actions like leastLost) because some of the actions dont
 	// actually contain any additional information other than their action
 	// name. Regaurdless, this is done to seperate the buisness logic of
-	// consuming input from kcl into two steps while retaining seperate 
+	// consuming input from kcl into two steps while retaining seperate
 	// action types:
 	//     1. Read in stdinput and confirm it is some sort of action (RawAction)
 	//     2. Depending on what *type* of action, unmarshal it into its
@@ -89,7 +89,6 @@ func (kclm *KCLManager) processRawAction(ra actions.RawAction) error {
 	}
 	return nil
 }
-
 
 // Run is the quickest way to start using this KCL Multilang interface
 // to consume kinesis records. It uses an instance of KCLInterfacer to

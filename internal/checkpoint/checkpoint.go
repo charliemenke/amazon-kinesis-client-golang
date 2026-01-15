@@ -1,7 +1,6 @@
 package checkpoint
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,34 +15,29 @@ type checkPointResp struct {
 }
 
 type Checkpointer struct {
-	input  *bufio.Reader
+	input  *json.Decoder
 	output *json.Encoder
-	loggr *slog.Logger
+	loggr  *slog.Logger
 }
 
 func NewCheckpointer(input io.Reader, output io.Writer, loggr *slog.Logger) *Checkpointer {
 	return &Checkpointer{
-		input: bufio.NewReader(input),
+		input:  json.NewDecoder(input),
 		output: json.NewEncoder(output),
-		loggr: loggr,
+		loggr:  loggr,
 	}
 }
 
 func (c *Checkpointer) checkKCLResp() error {
-	in, err := c.input.ReadString('\n')
-	if err != nil {
-		return err
-	}
-
 	var resp checkPointResp
-	err = json.Unmarshal([]byte(in), &resp)
+	err := c.input.Decode(&resp)
 	if err != nil {
 		return err
 	}
 	c.loggr.Debug("recieved checkpoint response from kcl multilang process", "response", resp)
 
 	if resp.Error != "" {
-		return fmt.Errorf("bad checkpoint ack from kcl multilang process: %s\n", resp.Error)
+		return fmt.Errorf("bad checkpoint ack from kcl multilang process: %s", resp.Error)
 	}
 	return nil
 }
