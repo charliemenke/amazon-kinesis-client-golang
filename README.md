@@ -17,9 +17,13 @@ The library and its exported types can be found under
 ```bash
 ├── pkg
 │   └── kcl
-│       ├── kcl_manager
-│       │   └── kcl_manager.go
-│       └── kcl.go
+│       ├── actions
+│       │   └── actions.go
+│       ├── checkpoint
+│       │   └── checkpoint.go
+│       ├── interface.go
+│       ├── kcl.go
+│       └── manager.go
 ```
 
 2. **Example usage of said library**
@@ -37,7 +41,7 @@ more detail below.
 │       └── sample.properties
 ├── logback.xml
 ├── Makefile
-└─── pom.xml
+└── pom.xml
 ```
 
 ## Using the library
@@ -49,10 +53,9 @@ To start consuming Kinesis records with this library you simply need to implemen
 ```go
 type RecordProcessor interface {
 	Initialize(shardId, seqNum string, subSeqNum int) error
-	ProcessRecords(records []Record, lag int, cp *checkpoint.Checkpointer) error
+	ProcessRecords(records []actions.Record, lag int, cp *checkpoint.Checkpointer) error
 	LeaseLost() error
-	ShardEnded(shardSeqEnd string, cp *checkpoint.Checkpointer) error
-	Shutdown(reason string, cp *checkpoint.Checkpointer) error
+	ShardEnded(cp *checkpoint.Checkpointer) error
 	ShutdownRequested(cp *checkpoint.Checkpointer) error
 }
 ```
@@ -115,3 +118,15 @@ minutes to spin up.
 record processor writes its logs to stderr (if you use log or slog, this is the default output) to 
 avoid errors. Additionally, you can edit the `logback.xml` file to tune the kcl multilang process 
 logging.
+
+## Advanced Usage
+
+While using `KCLManager` and implementing the `RecordProcessor` interface is the easiest way to get started, advanced users who need more fine-grained control over the KCL Multilang protocol and child process communication loop can choose to use the `kcl.MultilangInterface` struct directly.
+
+This approach gives you direct access to read KCL actions and write responses, but requires a deep understanding of the KCL Multilang protocol. Only advanced users should consider this approach, as it bypasses the convenient abstractions provided by `KCLManager` and requires careful handling of all protocol interactions.
+
+To use the interface directly, you would:
+1. Create a `kcl.MultilangInterface` with your input/output streams
+2. Read raw actions using `ReadActionRequest()`
+3. Handle each action type manually according to the KCL Multilang protocol
+4. Write completion responses using `WriteActionComplete()`
