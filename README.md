@@ -1,7 +1,7 @@
 
 # amazon-kinesis-client-golang
 
-A simple wrapper around AWS's Kinesis Client Library, written in Go and modeled based off 
+A simple wrapper around AWS's Kinesis Client Library written in Go, modeled and based off 
 of [amazon-kinesis-client-python](https://github.com/awslabs/amazon-kinesis-client-python). 
 Using this library allows the developer to not need to worry about the low level interactions 
 between the Java Multilang KCL client and their own record processing code.
