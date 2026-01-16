@@ -37,9 +37,9 @@ more detail below.
 ├── cmd
 │   └── sample
 │       ├── sample
-│       ├── sample_processor.go
-│       └── sample.properties
+│       └── sample_processor.go
 ├── logback.xml
+├── sample_kcl.properties.xml
 ├── Makefile
 └── pom.xml
 ```
