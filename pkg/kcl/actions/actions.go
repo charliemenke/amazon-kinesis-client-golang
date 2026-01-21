@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	INITITALIZE = "initalize"
+	INITITALIZE = "initialize"
 	PROCESS_RECORDS = "processRecords"
 	LEASE_LOST = "leaseLost"
 	SHARD_ENDED = "shardEnded"
