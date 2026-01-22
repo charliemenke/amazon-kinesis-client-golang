@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 )
 
 type checkPointResp struct {
@@ -17,14 +16,12 @@ type checkPointResp struct {
 type Checkpointer struct {
 	input  *json.Decoder
 	output *json.Encoder
-	loggr  *slog.Logger
 }
 
-func NewCheckpointer(input io.Reader, output io.Writer, loggr *slog.Logger) *Checkpointer {
+func NewCheckpointer(input io.Reader, output io.Writer) *Checkpointer {
 	return &Checkpointer{
 		input:  json.NewDecoder(input),
 		output: json.NewEncoder(output),
-		loggr:  loggr,
 	}
 }
 
@@ -34,7 +31,6 @@ func (c *Checkpointer) checkKCLResp() error {
 	if err != nil {
 		return err
 	}
-	c.loggr.Debug("recieved checkpoint response from kcl multilang process", "response", resp)
 
 	if resp.Error != "" {
 		return fmt.Errorf("bad checkpoint ack from kcl multilang process: %s", resp.Error)
@@ -43,7 +39,6 @@ func (c *Checkpointer) checkKCLResp() error {
 }
 
 func (c *Checkpointer) CheckpointBatch() error {
-	c.loggr.Debug("got checkpoint batch request from record processor")
 	output := map[string]string{"action": "checkpoint"}
 	err := c.output.Encode(output)
 	if err != nil {
@@ -57,7 +52,6 @@ func (c *Checkpointer) CheckpointBatch() error {
 	return nil
 }
 func (c *Checkpointer) CheckpointSeqNum(seqNum string) error {
-	c.loggr.Debug("got checkpoint seq num request from record processor", "seq_num", seqNum)
 	output := map[string]any{
 		"action":         "checkpoint",
 		"sequenceNumber": seqNum,
@@ -74,7 +68,6 @@ func (c *Checkpointer) CheckpointSeqNum(seqNum string) error {
 	return nil
 }
 func (c *Checkpointer) CheckpointSubSeqNum(seqNum string, subSeqNum int) error {
-	c.loggr.Debug("got checkpoint seq num with sub seq num request from record processor", "seq_num", seqNum, "sub_seq_num", subSeqNum)
 	output := map[string]any{
 		"action":            "checkpoint",
 		"sequenceNumber":    seqNum,

@@ -25,7 +25,7 @@ func NewManager(i io.Reader, o io.Writer, rp RecordProcessor, opts ...ManagerOpt
 		opt(kclm)
 	}
 	// set interffacer after apply opts since user could spec different logger
-	kclm.interfacer = NewMultilangInterface(i, o, WithInterfaceLogger(kclm.loggr))
+	kclm.interfacer = NewMultilangInterface(i, o)
 	return kclm
 }
 

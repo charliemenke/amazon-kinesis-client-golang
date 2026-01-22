@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/actions"
 	"github.com/charliemenke/amazon-kinesis-client-golang/pkg/kcl/checkpoint"
@@ -17,7 +16,6 @@ import (
 type MultilangInterface struct {
 	input        *json.Decoder
 	output       *json.Encoder
-	loggr        *slog.Logger
 	Checkpointer *checkpoint.Checkpointer
 }
 
@@ -27,19 +25,12 @@ func NewMultilangInterface(i io.Reader, o io.Writer, opts ...MultilangInterfaceO
 	kcli := &MultilangInterface{
 		input:  json.NewDecoder(i),
 		output: json.NewEncoder(o),
-		loggr:  slog.Default(),
 	}
 	for _, opt := range opts {
 		opt(kcli)
 	}
-	kcli.Checkpointer = checkpoint.NewCheckpointer(i, o, kcli.loggr)
+	kcli.Checkpointer = checkpoint.NewCheckpointer(i, o)
 	return kcli
-}
-
-func WithInterfaceLogger(l *slog.Logger) MultilangInterfaceOpts {
-	return func(kcli *MultilangInterface) {
-		kcli.loggr = l
-	}
 }
 
 // ReadActionRequest reads the next available KCL Multilang action
@@ -52,7 +43,6 @@ func (kcli *MultilangInterface) ReadActionRequest() (actions.RawAction, error) {
 	if err != nil {
 		return rawAction, fmt.Errorf("error reading kcl action request: %v", err)
 	}
-	kcli.loggr.Debug("kcl multilang raw action read", "action_type", rawAction.ActionType)
 
 	return rawAction, nil
 }
@@ -63,7 +53,6 @@ func (kcli *MultilangInterface) ReadActionRequest() (actions.RawAction, error) {
 //
 //	{ "action": "status", "responseFor": "<action type you completed>" }
 func (kcli *MultilangInterface) WriteActionComplete(actionType string) error {
-	kcli.loggr.Debug("reporting success status back to kcl multilang process", "response_for", actionType)
 	output := map[string]string{"action": "status", "responseFor": actionType}
 	err := kcli.output.Encode(output)
 	if err != nil {

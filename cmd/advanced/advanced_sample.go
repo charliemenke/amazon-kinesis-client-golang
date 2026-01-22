@@ -50,7 +50,6 @@ func main() {
 
 }
 
-
 func startUp(kcli *kcl.MultilangInterface) error {
 	rAction, err := kcli.ReadActionRequest()
 	if err != nil {
@@ -89,7 +88,7 @@ func handleKclBatch(kcli *kcl.MultilangInterface, batchLen int) ([]actions.Recor
 			}
 			recordsBatch = append(recordsBatch, a.Records...)
 			// if still below batch length, make sure to report that action is done for next loop
-			if len(recordsBatch) <  batchLen { 
+			if len(recordsBatch) < batchLen {
 				kcli.WriteActionComplete(a.Action)
 			}
 		default:

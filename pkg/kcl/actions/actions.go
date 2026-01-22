@@ -3,14 +3,13 @@ package actions
 import (
 	"encoding/json"
 	"fmt"
-
 )
 
 const (
-	INITITALIZE = "initialize"
-	PROCESS_RECORDS = "processRecords"
-	LEASE_LOST = "leaseLost"
-	SHARD_ENDED = "shardEnded"
+	INITITALIZE        = "initialize"
+	PROCESS_RECORDS    = "processRecords"
+	LEASE_LOST         = "leaseLost"
+	SHARD_ENDED        = "shardEnded"
 	SHUTDOWN_REQUESTED = "shutdownRequested"
 )
 
@@ -104,8 +103,8 @@ type InitAction struct {
 }
 
 type ProcessAction struct {
-	Action             string       `json:"action"`
-	MillisBehindLatest int          `json:"millisBehindLatest"`
+	Action             string   `json:"action"`
+	MillisBehindLatest int      `json:"millisBehindLatest"`
 	Records            []Record `json:"records"`
 }
 
@@ -120,7 +119,6 @@ type Record struct {
 	SequenceNumber              string `json:"sequenceNumber"`
 	SubSequenceNumber           int    `json:"subSequenceNumber"`
 }
-
 
 type LeaseLostAction struct {
 	Action string `json:"action"`

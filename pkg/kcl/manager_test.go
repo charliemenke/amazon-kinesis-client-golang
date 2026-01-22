@@ -14,24 +14,24 @@ import (
 
 // MockRecordProcessor implements the RecordProcessor interface for testing
 type MockRecordProcessor struct {
-	InitializeCalled   bool
-	ProcessRecordsCalled bool
-	LeaseLostCalled    bool
-	ShardEndedCalled   bool
+	InitializeCalled        bool
+	ProcessRecordsCalled    bool
+	LeaseLostCalled         bool
+	ShardEndedCalled        bool
 	ShutdownRequestedCalled bool
-	
-	InitializeError error
-	ProcessRecordsError error
-	LeaseLostError error
-	ShardEndedError error
+
+	InitializeError        error
+	ProcessRecordsError    error
+	LeaseLostError         error
+	ShardEndedError        error
 	ShutdownRequestedError error
-	
+
 	InitializeArgs struct {
 		ShardId   string
 		SeqNum    string
 		SubSeqNum int
 	}
-	
+
 	ProcessRecordsArgs struct {
 		Records []actions.Record
 		Lag     int
@@ -73,9 +73,9 @@ func TestNewManager(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		assert.NotNil(t, manager)
 		assert.Equal(t, mockProcessor, manager.recordProcessor)
 		assert.NotNil(t, manager.interfacer)
@@ -86,9 +86,9 @@ func TestNewManager(t *testing.T) {
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
 		logger := slog.New(slog.NewJSONHandler(&bytes.Buffer{}, nil))
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor, WithManagerLogger(logger))
-		
+
 		assert.NotNil(t, manager)
 	})
 }
@@ -98,23 +98,23 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		// Prepare test data
 		initAction := actions.InitAction{
-			Action:    "initalize",
+			Action:    "initialize",
 			ShardId:   "shard-123",
 			SeqNum:    "seq-456",
 			SubSeqNum: 1,
 		}
-		
+
 		actionBytes, _ := json.Marshal(initAction)
 		rawAction := actions.RawAction{
-			ActionType: "initalize",
+			ActionType: "initialize",
 			Raw:        actionBytes,
 		}
-		
+
 		err := manager.processRawAction(rawAction)
 		assert.NoError(t, err)
 		assert.True(t, mockProcessor.InitializeCalled)
@@ -127,7 +127,7 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
 
 		// write test data to input
@@ -146,10 +146,10 @@ func TestProcessRawAction(t *testing.T) {
 		}
 		actionBytes, _ := json.Marshal(processAction)
 		mockReader.Write(actionBytes)
-		
+
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		err = manager.processRawAction(rAction)
 		assert.NoError(t, err)
 		assert.True(t, mockProcessor.ProcessRecordsCalled)
@@ -160,19 +160,19 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		leaseLostAction := actions.LeaseLostAction{
 			Action: "leaseLost",
 		}
-		
+
 		actionBytes, _ := json.Marshal(leaseLostAction)
 		mockReader.Write(actionBytes)
 
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		err = manager.processRawAction(rAction)
 		assert.NoError(t, err)
 		assert.True(t, mockProcessor.LeaseLostCalled)
@@ -182,19 +182,19 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		shardEndedAction := actions.ShardEndedAction{
 			Action: "shardEnded",
 		}
-		
+
 		actionBytes, _ := json.Marshal(shardEndedAction)
 		mockReader.Write(actionBytes)
 
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		err = manager.processRawAction(rAction)
 		assert.NoError(t, err)
 		assert.True(t, mockProcessor.ShardEndedCalled)
@@ -204,19 +204,19 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		shutdownRequestedAction := actions.ShutdownRequestedAction{
 			Action: "shutdownRequested",
 		}
-		
+
 		actionBytes, _ := json.Marshal(shutdownRequestedAction)
 		mockReader.Write(actionBytes)
 
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		err = manager.processRawAction(rAction)
 		assert.NoError(t, err)
 		assert.True(t, mockProcessor.ShutdownRequestedCalled)
@@ -226,16 +226,16 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		unsupportedAction := map[string]string{"action": "I DONT EXIST"}
 		actionBytes, _ := json.Marshal(unsupportedAction)
 		mockReader.Write(actionBytes)
 
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		err = manager.processRawAction(rAction)
 		assert.Error(t, err)
 	})
@@ -244,24 +244,24 @@ func TestProcessRawAction(t *testing.T) {
 		mockReader := &bytes.Buffer{}
 		mockWriter := &bytes.Buffer{}
 		mockProcessor := new(MockRecordProcessor)
-		
+
 		manager := NewManager(mockReader, mockWriter, mockProcessor)
-		
+
 		initAction := actions.InitAction{
-			Action:    "initalize",
+			Action:    "initialize",
 			ShardId:   "shard-123",
 			SeqNum:    "seq-456",
 			SubSeqNum: 1,
 		}
-		
+
 		actionBytes, _ := json.Marshal(initAction)
 		mockReader.Write(actionBytes)
 
 		rAction, err := manager.interfacer.ReadActionRequest()
 		assert.NoError(t, err)
-		
+
 		mockProcessor.InitializeError = errors.New("processor error")
-		
+
 		err = manager.processRawAction(rAction)
 		assert.Error(t, err)
 	})
